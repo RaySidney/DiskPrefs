@@ -4,7 +4,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const contatoSection = document.getElementById("contato");
   const fotosInput = document.getElementById("fotos");
 
-  // Mostrar ou esconder os campos de contato com base no checkbox
   checkboxAnonima.addEventListener("change", () => {
     contatoSection.style.display = checkboxAnonima.checked ? "none" : "block";
   });
@@ -18,30 +17,44 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const formData = new FormData(form);
-    const isAnonima = checkboxAnonima.checked;
-
-    if (isAnonima) {
-      formData.set("nome", "");
-      formData.set("telefone", "");
-      formData.set("email", "");
-    }
-
-    // Controle do número de protocolo (001 a 500)
     let numeroProtocolo = parseInt(localStorage.getItem("ultimoProtocolo") || "0", 10);
     if (numeroProtocolo >= 500) {
       alert("Limite de denúncias atingido (500).");
       return;
     }
-
     numeroProtocolo += 1;
     const protocoloFormatado = numeroProtocolo.toString().padStart(3, '0');
     localStorage.setItem("ultimoProtocolo", numeroProtocolo);
     localStorage.setItem("protocoloAtual", protocoloFormatado);
 
-    // Você pode adicionar lógica de envio (ex: via fetch) aqui, se necessário
+    const formData = new FormData();
+    formData.append("nomeUsuario", checkboxAnonima.checked ? "" : form.nome.value);
+    formData.append("email", checkboxAnonima.checked ? "" : form.email.value);
+    formData.append("telefoneUsuario", checkboxAnonima.checked ? "" : form.telefone.value);
+    formData.append("tituloDenuncia", form.titulo.value);
+    formData.append("categoriaDenuncia", form.categoria.value);
+    formData.append("descricaoDenuncia", form.descricao.value);
+    formData.append("enderecoDenuncia", form.endereco.value);
+    formData.append("denunciaAnonima", checkboxAnonima.checked);
 
-    // Redireciona para a página de confirmação
-    window.location.href = "sucesso.html";
+    // Anexar fotos ao FormData
+    for (let i = 0; i < fotos.length; i++) {
+      formData.append("fotos", fotos[i]);
+    }
+
+    fetch("/denuncias", {
+      method: "POST",
+      body: formData
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Erro ao enviar denúncia");
+      return res.json();
+    })
+    .then(() => {
+      window.location.href = "sucesso.html";
+    })
+    .catch(err => {
+      alert("Falha no envio: " + err.message);
+    });
   });
 });
